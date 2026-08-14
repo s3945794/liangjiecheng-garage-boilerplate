@@ -143,7 +143,7 @@ To patch: add these two lines under `overrides:` in `pnpm-workspace.yaml`, then 
 
 ```yaml
   js-yaml: '^4.3.1'
-  nanoid: '^3.3.17'
+  nanoid: '^3.3.18'
 ```
 
 Confirm with `pnpm audit` — should show 0 high/critical findings.
