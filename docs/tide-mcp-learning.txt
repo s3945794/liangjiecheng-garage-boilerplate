@@ -330,5 +330,241 @@ these narrower requests, with no repository changes.
     integration.
 
 ============================================================
+ISSUE 005 - Canonical realm template not retrievable through Tide MCP; the
+            built-in TideCloak realm wizard is the working local-dev path
+============================================================================
+
+Date: 2026-09-09
+Updated: 2026-09-09 (after a successful manual runtime test - see section 7)
+Project feature: SOC Incident Report Protection PoC - local TideCloak setup
+                 (feature/tidecloak-auth)
+Tide component: Tide MCP resources (tide_playbook bootstrap-realm-from-template,
+                tide_scenario_bootstrap, tide_list); the Tide pack
+                templates/shared/ directory; the built-in TideCloak
+                "Create a Tide realm" wizard
+Status: Resolved with workaround
+Impact: Development time and reproducibility - interactive local setup works;
+        scripted/automated setup for another machine is still not possible
+Priority for Tide: Medium (was High before the wizard path was confirmed)
+
+1. What happened
+The playbook "bootstrap-realm-from-template" (Step 2) requires a full canonical
+realm template file:
+    cp templates/shared/realm.json.template "$TMP_REALM"
+and its Common Failures table states that a minimal, hand-written realm.json is
+NOT acceptable ("Missing link-tide-account-action | Minimal realm template used
+| Use full template from templates/shared/realm.json.template"). No Tide MCP
+resource returns the contents of that template. The initial conclusion was that
+local realm creation was blocked. That conclusion turned out to be wrong: the
+installed TideCloak version ships a built-in "Create a Tide realm" wizard that
+provisions the realm interactively without any downloaded template.
+
+2. How to reproduce or observe it
+  * Read playbook "bootstrap-realm-from-template" - it references
+    templates/shared/realm.json.template but does not contain it.
+  * Make a direct, focused request to tide_scenario_bootstrap (scenario
+    "organisation-password-manager"). The result is a bootstrap PROCEDURE that
+    lists what the template must declare ("Template must declare: realm name,
+    OIDC client, _tide_enabled role, self-encryption roles, default-roles
+    composite, protocol mappers") but ships no template file.
+  * Enumerate the MCP surface: tide_list categories are canon, playbooks,
+    skills, prompts, adapters, scenarios - there is no "templates" category and
+    no tide_template tool. The playbook / skill / prompt name lists contain no
+    template entry, and none of them tell the developer to use the built-in
+    realm wizard as the interactive fallback.
+  * Sign in to the local TideCloak admin console with the bootstrap admin and
+    open "Create a Tide realm" - the wizard provisions realm, Tide connection,
+    licence, linked admin, application client and QEA workflow.
+
+3. Evidence
+  * tide_scenario_bootstrap("organisation-password-manager") Phase 2 Step 3:
+    "Import realm template - POST /admin/realms with realm.json. Template must
+    declare: ...". Describes contents; provides no file.
+  * bootstrap-realm-from-template Step 2 + Common Failures row quoted above.
+  * tide_list category enum (from the tool schema): canon | playbooks | skills
+    | prompts | adapters | scenarios | all. No templates.
+  * Local filesystem search for realm.json.template / tide templates dirs:
+    nothing present in the consumer environment.
+  * Manual runtime test: the built-in wizard created realm
+    "soc-incident-report-protection" with client "soc-incident-report-protection-app",
+    including the Tide connection, licence and QEA workflow, with no separately
+    downloaded template. Realm and client survived a container stop/restart.
+
+  Note on scope: an earlier phase deliberately restricted Tide MCP use to four
+  resources. The template gap is NOT an artefact of that restriction - a
+  direct, unrestricted tide_scenario_bootstrap request still did not yield a
+  template, and no MCP resource pointed to the built-in wizard.
+
+4. Root cause
+Root cause of the missing template access is not confirmed.
+Likely explanation (inference): the Tide pack keeps shared templates as files
+in templates/shared/ on the server side and exposes playbooks/canon/scenarios
+as text through MCP, with no tool that serves template files to the caller; and
+the playbooks are written for the scripted path, so they do not mention the
+interactive wizard that the current TideCloak build provides.
+
+5. Investigation
+  * Read bootstrap-realm-from-template and initialize-admin-and-link-account in
+    full; confirmed the scripted realm import depends on the external template
+    and that a minimal substitute is explicitly disallowed.
+  * Issued one focused tide_scenario_bootstrap request; confirmed it returns a
+    procedure, not a template, and does not mention the wizard.
+  * Confirmed no other retrieval path (tool categories, name enums, local
+    filesystem).
+  * Did NOT hand-write a replacement template.
+  * Used the built-in "Create a Tide realm" wizard instead and verified the
+    result with a manual start / provision / stop / restart test.
+
+6. Solution or workaround (confirmed)
+  * Use the built-in TideCloak "Create a Tide realm" wizard for interactive
+    local setup. Sign in with the local bootstrap admin, run the wizard, link a
+    Tide account during enrollment, configure the application client, and
+    authorize the QEA changes it generates.
+  * The wizard created the realm and client WITHOUT a separately downloaded
+    realm template.
+  * The realm and client SURVIVED a container stop/restart (state persists in
+    the gitignored ./data bind mount).
+  * This is the confirmed local-development setup path for this project.
+
+  Remaining limitation:
+  * The Tide MCP guidance did not expose the canonical template and did not
+    clearly identify the built-in wizard as the interactive fallback.
+  * Automated / scripted setup so another developer can recreate the realm on a
+    clean machine remains unresolved - it still needs an exportable template or
+    a documented automation path from Tide.
+  * Do not hand-write a realm.json.
+
+7. Verification
+  * tide_scenario_bootstrap output re-checked: still a procedure, no template.
+  * Manual runtime test (local machine, single developer):
+      - pnpm run tidecloak:start -> container
+        liangjiecheng-garage-boilerplate-tidecloak-1 started; TideCloak
+        answered at http://localhost:8080 (readiness probe HTTP 302); the older
+        unrelated global container named "tidecloak" was not touched.
+      - Built-in wizard provisioned realm "soc-incident-report-protection" and
+        client "soc-incident-report-protection-app"; Ragnarok/offboarding left
+        disabled; five QEA changes reviewed and authorized.
+      - pnpm run tidecloak:stop stopped only the project container and kept
+        ./data; a second start showed the realm and client still present.
+  * Not verified: end-to-end login (requires the Next.js auth code, not yet
+    written); scripted realm recreation on another machine.
+
+8. Value for Tide
+  * Why it matters: builders following bootstrap-realm-from-template hit a hard
+    stop on the missing template and have no signposted alternative, even
+    though the shipped TideCloak build can create the realm interactively. The
+    fix is documentation, not code.
+  * Suggested Tide improvement:
+      - Update the relevant MCP playbook to explain WHEN a developer should use
+        the built-in "Create a Tide realm" wizard (interactive local setup)
+        versus the template-import path.
+      - Document how to obtain the canonical realm template when automation is
+        actually required.
+      - Clearly distinguish interactive setup from automated, reproducible
+        setup in the playbook and scenario docs.
+  * How it helps others: developers doing local PoC work get unblocked
+    immediately via the wizard, and teams that need CI-reproducible realms know
+    up front that they must request the template / automation path.
+
+============================================================
+ISSUE 006 - Realm wizard "Redirect URI" field behaved like a base URL
+====================================================================
+
+Date: 2026-09-09
+Project feature: SOC Incident Report Protection PoC - application client setup
+                 in the built-in TideCloak realm wizard (feature/tidecloak-auth)
+Tide component: TideCloak built-in "Create a Tide realm" wizard - application
+                client / redirect URI configuration step
+Status: Workaround available and Open for Tide
+Impact: Security and correctness - wrong redirect URIs and web origin cause
+        authentication redirect failures and CORS failures
+Priority for Tide: High
+
+1. What happened
+In the realm wizard the field was labelled "Redirect URI". The exact callback
+    http://localhost:3000/auth/redirect
+was entered. The generated client configuration then contained:
+    http://localhost:3000/auth/redirect/*
+    http://localhost:3000/auth/redirect/auth/redirect
+    http://localhost:3000/auth/redirect/silent-check-sso.html
+    http://localhost:3000/auth/redirect
+and the generated web origin was:
+    http://localhost:3000/auth/redirect
+The duplicated segment "/auth/redirect/auth/redirect" shows the wizard treated
+the supplied value as an application BASE URL and appended callback / silent-SSO
+paths to it, rather than storing it as an exact redirect URI.
+
+2. How to reproduce or observe it
+  * Run the built-in "Create a Tide realm" wizard.
+  * At the application-client step, put an exact callback path (for example
+    http://localhost:3000/auth/redirect) into the "Redirect URI" field.
+  * Finish the wizard and inspect the generated client: valid redirect URIs and
+    web origin are derived by appending paths to the value entered, producing
+    duplicated-path entries.
+
+3. Evidence
+  * Generated valid redirect URIs (verbatim):
+      http://localhost:3000/auth/redirect/*
+      http://localhost:3000/auth/redirect/auth/redirect
+      http://localhost:3000/auth/redirect/silent-check-sso.html
+      http://localhost:3000/auth/redirect
+  * Generated web origin (verbatim):
+      http://localhost:3000/auth/redirect
+  * The "/auth/redirect/auth/redirect" entry is only explicable if the field
+    value was used as a base URL with "/auth/redirect" appended.
+
+4. Root cause
+Root cause not confirmed.
+Likely explanation (inference, clearly marked as such): the field LABEL
+("Redirect URI") tells the developer to enter an exact callback URL, but the
+GENERATION behaviour expects an application base URL and appends the callback
+and silent-SSO paths itself. Label and behaviour disagree.
+
+5. Investigation
+  * Compared the entered value with the generated client configuration.
+  * Identified that every generated entry is "<entered value>" + a known suffix
+    ("/*", "/auth/redirect", "/silent-check-sso.html", or unchanged).
+  * Concluded the field is effectively a base-URL field.
+
+6. Solution or workaround (confirmed)
+  * Set the application BASE URL to:  http://localhost:3000
+  * Manually correct the valid redirect URIs to:
+      http://localhost:3000/*
+      http://localhost:3000/auth/redirect
+      http://localhost:3000/silent-check-sso.html
+      http://localhost:3000
+  * Manually correct the web origin to:  http://localhost:3000
+  * Keep the client public.
+  * Keep Standard flow / Authorization Code enabled.
+  * Keep Direct access grants disabled.
+  * Authorize the QEA changes the save generates.
+
+7. Verification
+  * The corrected redirect URIs and web origin were displayed before saving.
+  * Saving generated five related QEA changes, all authorized:
+      update protocol mapper; set client attribute; update client web origins;
+      update client redirect URIs; update client property.
+  * The application client and its display name "SOC Incident Report Protection"
+    were still present after the TideCloak container was stopped and restarted.
+  * Not verified: full end-to-end login. That can only be checked after the
+    Next.js authentication code is implemented.
+
+8. Value for Tide
+  * Why it matters: a mislabelled field silently produces invalid redirect URIs
+    and an invalid web origin. In OIDC that means the IdP rejects the callback
+    (login fails) and the browser blocks token/userinfo calls (CORS fails). A
+    developer who trusts the wizard output ships a broken client.
+  * Suggested Tide improvement:
+      - Rename the field to "Application base URL", or state inline that
+        TideCloak will append the callback and silent-SSO paths.
+      - Show a preview of the generated redirect URIs and web origin before
+        provisioning.
+      - Reject or warn on duplicated path segments such as
+        "/auth/redirect/auth/redirect".
+  * How it helps others: every builder using the wizard gets correct redirect
+    URIs and web origins on the first pass, without needing to know that the
+    field is really a base URL.
+
+============================================================
 END OF LOG
 ==========

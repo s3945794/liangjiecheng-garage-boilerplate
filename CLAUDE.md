@@ -41,6 +41,7 @@ New to the repo? Read `docs/GUIDE.md` — it walks through building a feature en
 ├── firebase/          Firestore rules, indexes
 ├── docs/              Architecture and conventions docs (start with GUIDE.md)
 ├── scripts/           Utility scripts (bootstrap, validate-placeholders, migrations)
+├── tidecloak/         Local TideCloak config (SOC PoC) — see docs/TIDECLOAK-LOCAL.md
 └── .claude/           Claude Code harness (agents, skills, MCP, settings, hooks)
 ```
 
@@ -267,7 +268,7 @@ An important **security** problem may be recorded immediately, even if found qui
 - `pages/` directory — this is App Router only
 - `firebase/compat` — modular SDK only
 - Firebase Cloud Storage — removed from this boilerplate; it requires the paid Blaze plan. Store file metadata in Firestore, or use a free third-party host, if a feature needs uploads.
-- Docker / local Firebase emulators — not part of this setup; the app always talks to your real (free Spark-plan) Firebase project
+- Docker / local Firebase emulators — not part of this setup; the app always talks to your real (free Spark-plan) Firebase project. **Scoped exception:** the SOC Incident Report Protection PoC runs a local **TideCloak** identity server in one container (`docker-compose.tidecloak.yml`, `pnpm run tidecloak:*`). The frontend, backend and Firestore are still never containerised. See `docs/TIDECLOAK-LOCAL.md`.
 - `NEXT_PUBLIC_` prefix on secret values (service account, API keys)
 - Committing `.env.local` or `.env` — they are gitignored
 - Committing directly to `main`

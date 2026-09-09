@@ -18,6 +18,10 @@
     "typecheck": "pnpm -r typecheck",
     "bootstrap": "node scripts/bootstrap.js",
     "validate": "node scripts/validate-placeholders.js",
+    "tidecloak:start": "node scripts/tidecloak.js start",
+    "tidecloak:stop": "node scripts/tidecloak.js stop",
+    "tidecloak:status": "node scripts/tidecloak.js status",
+    "tidecloak:logs": "node scripts/tidecloak.js logs",
     "hooks": "lefthook install",
     "prepare": "lefthook install"
   },

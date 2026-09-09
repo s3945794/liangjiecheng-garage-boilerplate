@@ -1,0 +1,11 @@
+{
+  "$comment": "SOC Incident Report Protection PoC — confirmed realm design for realm 'soc-incident-report-protection'. These are TideCloak REALM roles (not client roles). 'id' is the stable machine identifier used in tokens and authorization checks; 'displayName' is a UI label only and is NOT authoritative. This file is a declarative reference for the Phase 1B realm bootstrap — no roles are created in Phase 1A, and nothing here has been applied to a running realm yet.",
+  "realm": "soc-incident-report-protection",
+  "roleKind": "realm",
+  "roles": [
+    { "id": "soc-analyst", "displayName": "SOC Analyst" },
+    { "id": "soc-supervisor", "displayName": "SOC Supervisor" },
+    { "id": "soc-team-leader", "displayName": "SOC Team Leader" },
+    { "id": "soc-manager", "displayName": "SOC Manager" }
+  ]
+}

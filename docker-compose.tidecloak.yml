@@ -1,0 +1,64 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# TideCloak — LOCAL DEVELOPMENT ONLY  (Phase 1A: container foundation)
+#
+# This is the ONLY Docker in this repo. The Next.js frontend, the Express
+# backend and Firestore are NOT containerised and continue to run exactly as
+# before (`pnpm run dev`, real Firebase project). Docker is a scoped exception
+# to the boilerplate's no-Docker rule, used purely to host a local TideCloak
+# identity server for the SOC Incident Report Protection PoC.
+#
+# Do not `docker compose -f docker-compose.tidecloak.yml up` by hand — use the
+# guarded wrapper so missing admin credentials fail loudly:
+#
+#   pnpm run tidecloak:start     # start (checks .env first)
+#   pnpm run tidecloak:stop      # stop  (keeps the ./data volume)
+#   pnpm run tidecloak:status    # container state + HTTP probe
+#   pnpm run tidecloak:logs      # follow logs
+#
+# The container runs ONLY when a developer explicitly starts it — there is no
+# restart policy, so it does not come back on Docker Desktop launch.
+#
+# Realm bootstrap (realm import, the four roles, admin user, adapter export) is
+# NOT part of Phase 1A. It is Phase 1B — see docs/TIDECLOAK-LOCAL.md.
+#
+# Reference: Tide playbook `start-tidecloak-dev`, canon `version-policy`.
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  tidecloak:
+    # `tideorg/tidecloak-dev:latest` IS the production image (the `-dev` suffix
+    # is historical) and is the only image the Tide pack supports. Do NOT swap
+    # in `tideorg/tidecloak-stg-dev` or any `-stg` build. — playbook
+    # `start-tidecloak-dev` Step 1.
+    image: tideorg/tidecloak-dev:latest
+    # NO `container_name:` — a fixed global name collides with any pre-existing
+    # `tidecloak` container from another project. Compose derives a
+    # project-scoped name instead (e.g. `<project>-tidecloak-1`). All tooling
+    # here (`scripts/tidecloak.js`) drives the service by its Compose service
+    # name `tidecloak`, never by a global container name.
+    #
+    # NO `command:` / `start-dev` override — the image has a pre-configured
+    # entrypoint and appending a Keycloak-style command breaks Tide init.
+    ports:
+      - '8080:8080'
+    environment:
+      # Bootstrap admin for the master realm. Both values come from the root
+      # .env (gitignored) — never hard-code them here, on the CLI, or in a
+      # script. Both are REQUIRED: compose fails loudly if either is unset, and
+      # `scripts/tidecloak.js` checks them before calling compose.
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:?KC_BOOTSTRAP_ADMIN_USERNAME must be set in the root .env}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:?KC_BOOTSTRAP_ADMIN_PASSWORD must be set in the root .env (never commit it)}
+    volumes:
+      # Bind mount to a ./data subdirectory (matches the playbook's
+      # `-v "$(pwd)/data:/opt/keycloak/data/h2"`). A NAMED volume here causes
+      # "exit code 2 / HTTPS warnings" on restart — keep the bind mount.
+      - ./data:/opt/keycloak/data/h2
+    # Do NOT set SYSTEM_HOME_ORK / USER_HOME_ORK / THRESHOLD_T / THRESHOLD_N /
+    # PAYER_PUBLIC — the image ships working defaults; overriding them by hand
+    # risks a broken threshold configuration.
+    #
+    # No container `healthcheck:` — readiness is probed from the host by
+    # `scripts/tidecloak.js` (HTTP GET localhost:8080), matching the playbook's
+    # external `curl -sf http://localhost:8080` check.
+    #
+    # No `restart:` policy — the container must not auto-start with Docker.

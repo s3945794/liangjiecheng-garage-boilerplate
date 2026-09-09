@@ -35,6 +35,10 @@ pnpm run env:sync       # also runs automatically before `pnpm run dev`
 | `CORS_ORIGIN` | No | No | Allowed CORS origin for the API (empty = deny all cross-origin) |
 | `PORT` | No | No | Local Functions dev server port (default `5001`) |
 | `STITCH_API_KEY` | **Yes** | No | Google Stitch key for the Claude Code MCP (stays in root `.env` only) |
+| `KC_BOOTSTRAP_ADMIN_USERNAME` | No | For TideCloak | Local TideCloak container bootstrap admin username. **No default** — you choose it. Read by `docker-compose.tidecloak.yml` only. See `docs/TIDECLOAK-LOCAL.md`. |
+| `KC_BOOTSTRAP_ADMIN_PASSWORD` | **Yes** | For TideCloak | Local TideCloak container bootstrap admin password. **No default.** Read by `docker-compose.tidecloak.yml` only; never commit a real value or put it on a command line. |
+
+`KC_BOOTSTRAP_ADMIN_*` are only needed if you run the local TideCloak container (`pnpm run tidecloak:start`), which requires **both** to be set — there is no default for either. They are consumed directly by Docker Compose (which reads the root `.env` itself) and are intentionally absent from `scripts/sync-env.js`, so they never reach `frontend/.env.local` or `backend/.env`.
 
 `NEXT_PUBLIC_*` values are compiled into the browser bundle — that prefix must **never** appear on a secret (a Claude Code hook blocks this).
 

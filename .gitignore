@@ -55,5 +55,23 @@ docs/BOILERPLATE-BENCHMARK.md
 # Microsoft Office lock files
 ~$*
 
+# TideCloak local dev — container state + machine-local / generated config.
+# Never commit any of this; it is environment-specific and may carry secrets.
+# (.gitignore has no inline comments — keep notes on their own lines.)
+/data/
+# adapter JSON (Phase 1B output) — explicit, though /data/ already covers it
+data/tidecloak.json
+# any machine-local TideCloak config
+tidecloak/*.local.json
+# canonical realm template (Phase 1B input — obtained from Tide, not vendored)
+tidecloak/realm.json.template
+*.tidecloak-adapter.json
+
+# Credentials / tokens / keys — never commit
+*.pem
+*.key
+*-token.json
+*-credentials.json
+
 # Internal QA notes — not for the public repo
 docs/REPLICATION-LOG.md
