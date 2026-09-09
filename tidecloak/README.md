@@ -11,11 +11,11 @@ manual runtime test (details in `../docs/TIDECLOAK-LOCAL.md`).
 
 ## What is here
 
-| File | Purpose |
-|------|---------|
-| `../docker-compose.tidecloak.yml` | One TideCloak container, `tideorg/tidecloak-dev:latest`, port 8080, bind mount `./data`. No fixed `container_name`, no restart policy. |
-| `../scripts/tidecloak.js` | `start` / `stop` / `status` / `logs` wrapper. Refuses to start without both admin env vars. Drives the Compose **service** `tidecloak`, never a global container name. |
-| `roles.json` | The **confirmed** realm design: four **realm** roles + UI display names. Declarative reference — **not created yet**. |
+| File                              | Purpose                                                                                                                                                                |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `../docker-compose.tidecloak.yml` | One TideCloak container, `tideorg/tidecloak-dev:latest`, port 8080, bind mount `./data`. No fixed `container_name`, no restart policy.                                 |
+| `../scripts/tidecloak.js`         | `start` / `stop` / `status` / `logs` wrapper. Refuses to start without both admin env vars. Drives the Compose **service** `tidecloak`, never a global container name. |
+| `roles.json`                      | The **confirmed** realm design: four **realm** roles + UI display names. Declarative reference — **not created yet**.                                                  |
 
 ## Why Docker here (and only here)
 
@@ -70,14 +70,14 @@ Ragnarok / offboarding was left **disabled**.
 
 ### Application client (confirmed)
 
-| Field | Value |
-|-------|-------|
-| Client ID | `soc-incident-report-protection-app` |
-| Name | `SOC Incident Report Protection` |
-| Base URL | `http://localhost:3000` |
-| Public client | Enabled |
-| Standard flow / Authorization Code | Enabled |
-| Direct access grants | Disabled |
+| Field                              | Value                                |
+| ---------------------------------- | ------------------------------------ |
+| Client ID                          | `soc-incident-report-protection-app` |
+| Name                               | `SOC Incident Report Protection`     |
+| Base URL                           | `http://localhost:3000`              |
+| Public client                      | Enabled                              |
+| Standard flow / Authorization Code | Enabled                              |
+| Direct access grants               | Disabled                             |
 
 Valid redirect URIs:
 
@@ -113,11 +113,11 @@ update client property) — all reviewed and authorized.
 Realm: **`soc-incident-report-protection`**
 
 | Role ID (in tokens — authoritative) | Display name (UI only) |
-|-------------------------------------|------------------------|
-| `soc-analyst`       | SOC Analyst |
-| `soc-supervisor`    | SOC Supervisor |
-| `soc-team-leader`   | SOC Team Leader |
-| `soc-manager`       | SOC Manager |
+| ----------------------------------- | ---------------------- |
+| `soc-analyst`                       | SOC Analyst            |
+| `soc-supervisor`                    | SOC Supervisor         |
+| `soc-team-leader`                   | SOC Team Leader        |
+| `soc-manager`                       | SOC Manager            |
 
 All four are **realm** roles. See [`roles.json`](roles.json). **None of them
 have been created in the realm yet** — that is the next step.

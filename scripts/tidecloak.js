@@ -57,7 +57,7 @@ function readEnvFile() {
     die(
       'No .env file at the repo root.\n' +
         'Create it:  cp .env.example .env\n' +
-        'Then set KC_BOOTSTRAP_ADMIN_USERNAME and KC_BOOTSTRAP_ADMIN_PASSWORD (local only — never commit).',
+        'Then set KC_BOOTSTRAP_ADMIN_USERNAME and KC_BOOTSTRAP_ADMIN_PASSWORD (local only — never commit).'
     )
   }
   const vars = {}
@@ -148,7 +148,7 @@ async function main() {
         `${missing.join(' and ')} ${missing.length === 1 ? 'is' : 'are'} empty in .env.\n` +
           'Set both in your local .env — they are gitignored and never leave your machine.\n' +
           'There is no default username and no default password: refusing to start TideCloak\n' +
-          'without explicit local credentials.',
+          'without explicit local credentials.'
       )
     }
 
@@ -177,9 +177,7 @@ async function main() {
       // eslint-disable-next-line no-await-in-loop
       await new Promise((r) => setTimeout(r, 5000))
     }
-    console.warn(
-      `\n${YELLOW}Not responding yet. Check: pnpm run tidecloak:logs${RESET}`,
-    )
+    console.warn(`\n${YELLOW}Not responding yet. Check: pnpm run tidecloak:logs${RESET}`)
     return
   }
 

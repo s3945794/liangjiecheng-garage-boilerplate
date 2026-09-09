@@ -8,11 +8,11 @@
 > runtime test; they are **not** yet reproducible by a script on another
 > machine.
 
-| Phase | Scope | Status |
-|-------|-------|--------|
-| **1A** | Local TideCloak **container foundation** + **interactive** realm / client provisioning via the built-in wizard | **Done and verified by manual runtime test** |
-| **1B** | The four SOC **roles**, adapter-JSON export, and a **reproducible / scripted** realm setup | Not started — scripted path still unavailable (see ISSUE 005) |
-| Later | **Frontend + backend authentication migration** — TideCloak provider, redirect handler, route/API protection, server-side JWT verification, role checks; removal of Firebase Authentication | Not started |
+| Phase  | Scope                                                                                                                                                                                       | Status                                                        |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| **1A** | Local TideCloak **container foundation** + **interactive** realm / client provisioning via the built-in wizard                                                                              | **Done and verified by manual runtime test**                  |
+| **1B** | The four SOC **roles**, adapter-JSON export, and a **reproducible / scripted** realm setup                                                                                                  | Not started — scripted path still unavailable (see ISSUE 005) |
+| Later  | **Frontend + backend authentication migration** — TideCloak provider, redirect handler, route/API protection, server-side JWT verification, role checks; removal of Firebase Authentication | Not started                                                   |
 
 ---
 
@@ -27,12 +27,12 @@ threshold-cryptography protocol) with **no free hosted tier suitable for local
 development**. The Tide playbooks run it as a local container. So this repo adds
 **exactly one** container, for TideCloak alone:
 
-| Component | How it runs | Containerised? |
-|-----------|-------------|----------------|
-| Frontend (Next.js) | `pnpm run dev` — host process | No |
-| Backend (Express/Functions) | host process | No |
-| Firestore | real Firebase project | No |
-| **TideCloak** | **Docker container (`docker-compose.tidecloak.yml`)** | **Yes — the only one** |
+| Component                   | How it runs                                           | Containerised?         |
+| --------------------------- | ----------------------------------------------------- | ---------------------- |
+| Frontend (Next.js)          | `pnpm run dev` — host process                         | No                     |
+| Backend (Express/Functions) | host process                                          | No                     |
+| Firestore                   | real Firebase project                                 | No                     |
+| **TideCloak**               | **Docker container (`docker-compose.tidecloak.yml`)** | **Yes — the only one** |
 
 The frontend, backend and Firestore are **not** containerised. This is a scoped
 exception to the no-Docker rule in `CLAUDE.md`, not a migration to Docker
@@ -90,20 +90,20 @@ pnpm run tidecloak:stop         # stop; the ./data volume is KEPT
 
 A manual end-to-end test on the local machine confirmed:
 
-| # | Observation |
-|---|-------------|
-| 1 | `pnpm run tidecloak:start` started the container `liangjiecheng-garage-boilerplate-tidecloak-1`. |
-| 2 | TideCloak answered at `http://localhost:8080`; the readiness probe returned **HTTP 302**. |
-| 3 | The fixed Compose config (no `container_name:`) **did not touch** the older, unrelated global container named `tidecloak`. |
-| 4 | The developer signed in with the local bootstrap administrator. |
-| 5 | The built-in **"Create a Tide realm"** wizard created and provisioned realm `soc-incident-report-protection` with client ID `soc-incident-report-protection-app`. |
-| 6 | A **separate** Tide account was linked during enrollment (see "Two identities" below). |
-| 7 | Ragnarok / offboarding was **not** enabled. |
-| 8 | The application client was configured (see "Application client" below). |
-| 9 | Saving the client created **five** TideCloak QEA changes; all five were reviewed and authorized. |
-| 10 | `pnpm run tidecloak:stop` stopped **only** the project's container and kept `./data`. |
-| 11 | After a second `pnpm run tidecloak:start`, the realm and application client were **still present** — local persistence confirmed. |
-| 12 | TideCloak was stopped safely after testing. |
+| #   | Observation                                                                                                                                                       |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `pnpm run tidecloak:start` started the container `liangjiecheng-garage-boilerplate-tidecloak-1`.                                                                  |
+| 2   | TideCloak answered at `http://localhost:8080`; the readiness probe returned **HTTP 302**.                                                                         |
+| 3   | The fixed Compose config (no `container_name:`) **did not touch** the older, unrelated global container named `tidecloak`.                                        |
+| 4   | The developer signed in with the local bootstrap administrator.                                                                                                   |
+| 5   | The built-in **"Create a Tide realm"** wizard created and provisioned realm `soc-incident-report-protection` with client ID `soc-incident-report-protection-app`. |
+| 6   | A **separate** Tide account was linked during enrollment (see "Two identities" below).                                                                            |
+| 7   | Ragnarok / offboarding was **not** enabled.                                                                                                                       |
+| 8   | The application client was configured (see "Application client" below).                                                                                           |
+| 9   | Saving the client created **five** TideCloak QEA changes; all five were reviewed and authorized.                                                                  |
+| 10  | `pnpm run tidecloak:stop` stopped **only** the project's container and kept `./data`.                                                                             |
+| 11  | After a second `pnpm run tidecloak:start`, the realm and application client were **still present** — local persistence confirmed.                                 |
+| 12  | TideCloak was stopped safely after testing.                                                                                                                       |
 
 ### Realm created (interactively)
 
@@ -118,14 +118,14 @@ project.** See ISSUE 005 in `docs/tide-mcp-learning.txt`.
 
 ### Application client (confirmed configuration)
 
-| Field | Value |
-|-------|-------|
-| Client ID | `soc-incident-report-protection-app` |
-| Name | `SOC Incident Report Protection` |
-| Base URL | `http://localhost:3000` |
-| Public client | Enabled |
-| Standard flow / Authorization Code | Enabled |
-| Direct access grants | Disabled |
+| Field                              | Value                                |
+| ---------------------------------- | ------------------------------------ |
+| Client ID                          | `soc-incident-report-protection-app` |
+| Name                               | `SOC Incident Report Protection`     |
+| Base URL                           | `http://localhost:3000`              |
+| Public client                      | Enabled                              |
+| Standard flow / Authorization Code | Enabled                              |
+| Direct access grants               | Disabled                             |
 
 Valid redirect URIs:
 

@@ -4,9 +4,10 @@ pre-commit:
       run: node scripts/validate-placeholders.js
 
     format:
-      glob: '**/*.{ts,tsx,json,md,css}'
-      exclude: '(node_modules|\.next|\.git)'
-      run: npx --yes prettier --write {staged_files} || true
+      glob: '{,**/}*.{ts,tsx,js,jsx,mjs,cjs,json,md,css,yml,yaml}'
+      exclude: '(node_modules|\.next|\.git|pnpm-lock\.yaml)'
+      run: pnpm exec prettier --ignore-unknown --write {staged_files}
+      stage_fixed: true
 
     lint-frontend:
       root: 'frontend/'

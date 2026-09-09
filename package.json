@@ -27,6 +27,14 @@
   },
   "devDependencies": {
     "lefthook": "^1.11.13",
-    "next": "16.2.12"
+    "next": "16.2.12",
+    "prettier": "^3.5.3"
+  },
+  "prettier": {
+    "semi": false,
+    "singleQuote": true,
+    "tabWidth": 2,
+    "trailingComma": "es5",
+    "printWidth": 100
   }
 }
