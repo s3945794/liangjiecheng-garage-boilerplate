@@ -1,0 +1,334 @@
+============================================================
+TIDE DEVELOPMENT LEARNING LOG
+=============================
+
+Purpose:
+This file records only high-value findings about Tide, Tide MCP, TideCloak or
+the Tide Cybersecurity Fabric - not every development problem. Each entry must
+be worth re-using later, worth reading by a future Tide developer, and worth
+review by the client (Tide), so Tide can improve its MCP tools, documentation,
+playbooks or examples.
+
+Recording standard (four-part high-value recording gate):
+Create an entry only when ALL four are true.
+  1. The issue is directly connected to Tide, Tide MCP, TideCloak or the Tide
+     Cybersecurity Fabric.
+  2. There is clear evidence: an error, an unexpected tool result, a missing
+     instruction, or a repeatable behaviour.
+  3. The issue has a meaningful effect on security, correctness, development
+     time, or future Tide integrations.
+  4. The entry gives a useful workaround, solution, or actionable improvement
+     for Tide.
+Important security problems may be recorded immediately, even if found quickly.
+Do NOT record: spelling or typing mistakes, wrong commands typed by the user,
+working in the wrong directory, forgetting to start a service, missing local
+software, ordinary application bugs in this project's own code, a first failed
+coding attempt, simple errors solved quickly, general unfamiliarity, Claude Code
+or Kiro problems unrelated to Tide, or local Windows / Docker / network problems
+unless a Tide instruction directly caused them.
+
+Security:
+Never record passwords, tokens, cookies, private keys, client secrets, session
+values, or any other secret. Never record private AI reasoning. Record only the
+shape of a problem and the evidence needed to understand it.
+
+Status values:
+  * Investigating        - Evidence exists, but the cause or solution is not confirmed.
+  * Workaround available  - The project can continue, but the Tide issue remains.
+  * Resolved             - The cause was confirmed and the solution was tested.
+  * Open for Tide        - The project has a workaround, but Tide could still
+                           improve the product or guidance.
+
+============================================================
+ISSUE 001 - Scenario selector included an out-of-scope IGA workflow
+==================================================================
+
+Date: 2026-09-09
+Project feature: TideCloak authentication and RBAC for this branch (feature/tidecloak-auth)
+Tide component: Tide MCP scenario / playbook selection (tide_choose_scenario, tide_choose_playbook)
+Status: Workaround available and Open for Tide
+Impact: Correctness and development time - risk of scope creep
+Priority for Tide: Medium
+
+1. What happened
+The Tide scenario tools recommended the "iga-admin-governance" scenario for a
+task that was explicitly authentication-and-RBAC only. The request stated that
+this branch covers only TideCloak login, logout, protected routes, protected
+APIs and four roles, and that IGA and approval functionality were out of scope.
+The suggested playbook chain still included "setup-iga-admin-panel".
+
+2. How to reproduce or observe it
+Ask the Tide MCP scenario selector (tide_choose_scenario, then
+tide_choose_playbook) for a plan, stating that the work is limited to TideCloak
+login, logout, protected routes, protected APIs and four fixed roles, with no
+IGA and no approval workflows.
+
+3. Evidence
+Both the scenario result and the playbook selection result returned the
+IGA-focused workflow. The returned playbook chain contained
+"setup-iga-admin-panel" even though IGA had been excluded in the request.
+
+4. Root cause
+Root cause not confirmed.
+Likely explanation (inference): the scenario selector maps "roles / admin /
+access management" language onto the IGA governance scenario and has no
+authentication-and-RBAC-only scenario to fall back to, and no way to pass an
+exclusion list.
+
+5. Investigation
+  * Reviewed the returned scenario against the stated scope - the IGA admin
+    panel step was not needed for login, logout, route/API protection or role
+    checks.
+  * Checked whether a narrower scenario existed that covered only auth + RBAC -
+    none was offered by the selector for this request.
+  * Manually reduced the playbook chain to the auth + RBAC steps only.
+
+6. Solution or workaround
+The developer manually removed the IGA step and kept only:
+  * start-tidecloak-dev
+  * bootstrap-realm-from-template
+  * initialize-admin-and-link-account
+  * add-auth-nextjs-existing
+  * protect-routes-nextjs
+  * protect-api-nextjs
+  * verify-jwt-server-side
+  * add-rbac-nextjs
+
+7. Verification
+The final authentication plan was reviewed and contains no IGA administration
+step and no approval workflow. All remaining steps map directly to a stated
+requirement (login, logout, protected routes, protected APIs, four roles).
+
+8. Value for Tide
+  * Why it matters: following the full recommendation would add an admin panel
+    and governance surface that the client did not ask for, increasing scope,
+    review burden and attack surface.
+  * What could improve: the scenario selector could offer an
+    authentication-and-RBAC-only scenario, or accept an "exclude" parameter so
+    a caller can remove IGA / approvals / other modules from the recommended
+    chain.
+  * Suggested improvement: add an "auth + RBAC only" scenario and support an
+    exclusions argument on tide_choose_scenario / tide_choose_playbook.
+  * How it helps others: developers doing a minimal auth integration get a
+    plan that matches their scope without hand-editing the playbook chain.
+
+============================================================
+ISSUE 002 - Express backend guidance was difficult to locate
+===========================================================
+
+Date: 2026-09-09
+Project feature: Server-side JWT verification for the Express backend (backend/ Cloud Functions fat-lambda)
+Tide component: Tide MCP playbooks / canon (verify-jwt-server-side)
+Status: Workaround available and Open for Tide
+Impact: Security and correctness - risk of a weak or wrong verifier
+Priority for Tide: High
+
+1. What happened
+This project has an Express backend, but Tide MCP did not surface a clearly
+named Express playbook or a generic Node integration guide. The relevant
+Express middleware guidance was located inside Step 6 of the
+"verify-jwt-server-side" playbook rather than under an Express-specific or
+framework-level entry.
+
+2. How to reproduce or observe it
+Ask Tide MCP for server-side token verification guidance for an Express / Node
+backend. The response points to "verify-jwt-server-side", whose earlier steps
+are framed around Next.js; the Express-applicable detail is only in a later
+step.
+
+3. Evidence
+The Express middleware pattern (jose, embedded local JWK, issuer / azp / expiry
+checks, server-side role extraction) appears within Step 6 of
+verify-jwt-server-side. No playbook named for Express or generic Node was
+returned by the selector.
+
+4. Root cause
+Root cause not confirmed.
+Likely explanation (inference): the canon currently organises server-side
+verification around Next.js as the primary framework, with other frameworks
+covered as sub-steps rather than first-class playbooks.
+
+5. Investigation
+  * Searched the returned playbook list for an Express or Node entry - none
+    found.
+  * Read verify-jwt-server-side end to end and found the Express-applicable
+    material in Step 6.
+  * Confirmed the key security requirements that a Next.js-only reading could
+    miss: EdDSA (Ed25519) support in the JWT library, use of the embedded
+    local JWK instead of a remote JWKS fetch, and issuer + azp + expiry checks.
+
+6. Solution or workaround
+Apply Tide's server-side verification pattern in the Express backend using:
+  * the jose library (has EdDSA / Ed25519 support)
+  * Tide's embedded local JWK (no remote JWKS dependency)
+  * issuer validation
+  * azp validation
+  * expiry validation
+  * server-side role extraction from the verified token
+  * an Express authentication middleware that runs this before protected routes
+
+7. Verification
+The technical plan for the backend now names the required Express middleware,
+the token validation checks, and role enforcement at the route layer. (Code
+not written under this task - plan-level verification only.)
+
+8. Value for Tide
+  * Why it matters: JWT verification is security-critical. A developer who
+    reads only the Next.js framing could apply an Edge/middleware example that
+    does not fit Express, reach for a remote JWKS, or pick a JWT library with
+    no EdDSA support (for example Node "jsonwebtoken"), producing a verifier
+    that either fails closed on every request or fails open.
+  * What could improve: a dedicated Express / generic Node playbook, listed by
+    the selector, with a complete middleware example, EdDSA verification, and
+    tests.
+  * Suggested improvement: promote the Express content to its own playbook and
+    cross-link it from verify-jwt-server-side.
+  * How it helps others: Node/Express is a common backend choice; a
+    first-class playbook removes the risk of a mis-applied Next.js example.
+
+============================================================
+ISSUE 003 - No Firebase Authentication migration guide
+=====================================================
+
+Date: 2026-09-09
+Project feature: Replacing Firebase Authentication with TideCloak while keeping Firestore
+Tide component: Tide MCP playbook (migrate-from-existing-auth)
+Status: Workaround available and Open for Tide
+Impact: Security and correctness - risk of a second auth authority left active
+Priority for Tide: High
+
+1. What happened
+This project uses Firebase Authentication. The "migrate-from-existing-auth"
+playbook did not provide a Firebase-specific migration path. It covered
+Keycloak and standard OIDC providers such as Auth0 and Okta, where migration is
+largely an issuer / client swap. Firebase Authentication cannot be migrated
+that way.
+
+2. How to reproduce or observe it
+Ask Tide MCP how to migrate an app that authenticates with Firebase
+Authentication (Firebase client SDK on the frontend, Firebase Admin SDK and
+session cookies on the backend) to TideCloak.
+
+3. Evidence
+The playbook content addressed Keycloak and OIDC providers. It did not address
+the Firebase client SDK, the Firebase Admin SDK, Firebase session cookies, or
+how to keep Firestore while removing Firebase as an auth authority.
+
+4. Root cause
+Root cause not confirmed.
+Likely explanation (inference): the migration playbook assumes the source
+system is an OIDC-compliant IdP. Firebase Auth is not a drop-in OIDC IdP for
+this purpose, so the "swap issuer and client" model does not apply.
+
+5. Investigation
+  * Read migrate-from-existing-auth and confirmed it targets Keycloak / OIDC.
+  * Inspected this repo for the Firebase auth surface: client sign-in helpers,
+    server session helpers, and the session cookie API route
+    (frontend/src/lib/firebase/auth.ts, frontend/src/actions/auth.actions.ts,
+    frontend/src/lib/firebase/admin.ts, frontend/src/app/api/auth/session/route.ts).
+  * Confirmed Firestore access does not require Firebase Auth and can stay.
+
+6. Solution or workaround
+Replace Firebase Authentication completely; keep Firestore as the application
+database. Planned migration:
+  * Remove Firebase login and logout functions.
+  * Remove Firebase session-cookie creation and verification.
+  * Add TideCloakProvider on the frontend.
+  * Add the TideCloak redirect handler.
+  * Protect frontend routes with TideCloak.
+  * Verify TideCloak JWTs in the Express backend (see ISSUE 002).
+  * Keep only the Firebase functionality required for Firestore.
+
+7. Verification
+The repository inspection identified the exact Firebase authentication files
+and exports that must be removed or rewritten, and confirmed that Firestore
+access can be retained without Firebase Auth. (Plan-level verification - no
+auth code changed under this task.)
+
+8. Value for Tide
+  * Why it matters: without explicit guidance a developer may treat Firebase
+    as a standard OIDC provider, or leave Firebase session-cookie verification
+    in place next to TideCloak, creating two auth authorities and a bypass
+    path.
+  * What could improve: a Firebase Authentication migration section covering
+    the frontend SDK, the backend Admin SDK, session cookies, and safe
+    Firestore retention.
+  * Suggested improvement: add "Migrating from Firebase Authentication" to
+    migrate-from-existing-auth, including a checklist of Firebase auth surfaces
+    to remove and a note that Firestore/other Firebase services can stay.
+  * How it helps others: Firebase + Firestore is a very common stack for the
+    student and startup projects this boilerplate targets.
+
+============================================================
+ISSUE 004 - Large Tide canon responses were difficult to retrieve efficiently
+============================================================================
+
+Date: 2026-09-09
+Project feature: Research phase for the TideCloak auth integration plan
+Tide component: Tide MCP canon retrieval (tide_canon and related tools)
+Status: Workaround available and Open for Tide
+Impact: Reading effort and token cost; harder to find one critical instruction in a large document
+Priority for Tide: Medium
+
+1. What happened
+At least one Tide canon response was large enough that it could not be shown
+inline and had to be written to a scratch file and searched before the needed
+guidance could be used.
+
+2. How to reproduce or observe it
+Request a full canon document from Tide MCP during research. The response can be
+large enough that it must be written out and then searched, rather than read
+inline in one pass.
+
+3. Evidence
+Observed Tide MCP behaviour:
+  * A canon response was large enough to require saving to a file and searching
+    it locally instead of a single inline read.
+
+Claude-side context (NOT attributable to Tide):
+  * The overall research phase ran more than 11 minutes and used roughly
+    170,000 tokens. That figure covers all of Claude's work in that phase -
+    reading, narrowing searches, and background sub-agent runs - not the canon
+    tools alone. It is recorded to show the scale of the research effort, not
+    as a measured cost of any Tide MCP tool.
+
+4. Root cause
+Confirmed: at least one canon document was large enough to require saving and
+local searching rather than a single inline read.
+Root cause of that size is not confirmed.
+Likely explanation (inference): the canon retrieval tools return a whole
+document rather than only the section that answers the question.
+
+5. Investigation
+  * Observed that a single canon call returned more content than the question
+    needed.
+  * Switched to narrower, named requests and short output limits.
+  * Stopped each sub-search once enough evidence had been collected instead of
+    reading the whole document.
+
+6. Solution or workaround
+For future research: request named playbooks or narrow topics, set short output
+limits, and stop once enough evidence has been collected. Save a large response
+to a scratch file once and grep it locally rather than re-requesting it.
+
+7. Verification
+The authentication guidance needed for the plan (scenario chain, Express
+verification, Firebase migration approach) was successfully extracted using
+these narrower requests, with no repository changes.
+
+8. Value for Tide
+  * Why it matters: returning a whole document when a named section would do
+    adds avoidable reading and token cost, and makes it easier to miss a
+    single security-critical line inside a long document.
+  * What could improve: section-level retrieval, pagination, focused search
+    results, or a short summary mode for large canon documents.
+  * Suggested improvement: add a section or query parameter to the canon tools
+    so a caller can fetch one named section, and return a short summary plus a
+    table of contents for large documents.
+  * How it helps others: every developer using the pack does a research phase
+    first; faster, more targeted retrieval saves time and tokens on every
+    integration.
+
+============================================================
+END OF LOG
+==========

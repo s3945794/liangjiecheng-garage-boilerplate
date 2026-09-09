@@ -238,6 +238,28 @@ Always use `pnpm`. Run commands as:
 
 ---
 
+## High-Value Tide Learning Log
+
+`docs/tide-mcp-learning.txt` is a curated log of **high-value findings about Tide, Tide MCP, TideCloak, or the Tide Cybersecurity Fabric**. It is for reuse by this developer, by future Tide developers, and for review by the client (Tide). Keep it small and high-signal.
+
+**Recording gate — add an entry only when all four are true:**
+1. The issue is directly connected to Tide, Tide MCP, TideCloak, or the Tide Cybersecurity Fabric.
+2. There is clear evidence — an error, an unexpected tool result, a missing instruction, or repeatable behaviour.
+3. The issue has a meaningful effect on security, correctness, development time, or future Tide integrations.
+4. The entry gives a useful workaround, solution, or actionable improvement for Tide.
+
+An important **security** problem may be recorded immediately, even if found quickly.
+
+**Do not record:** user typos or wrong commands, wrong-directory mistakes, a forgotten service, missing local software, ordinary bugs in this project's own code, a first failed coding attempt, simple errors solved quickly, general unfamiliarity, Claude Code / Kiro issues unrelated to Tide, or local Windows / Docker / network problems unless a Tide instruction directly caused them. If the issue was mainly caused by the user or by ordinary project code, it does not belong in the log.
+
+**When writing an entry:** follow the file's existing structure — include evidence, impact, investigation, solution or workaround, and verification. Separate confirmed facts from inferences; write "Root cause not confirmed" when the cause is unknown. **Update the original entry** once a solution is found instead of adding a duplicate.
+
+**Never** store secrets (passwords, tokens, cookies, keys, session values) or private AI reasoning in the log.
+
+**For this project:** do not access Gmail. Avoid repeatedly loading large Tide canon documents when focused, section-level guidance is available.
+
+---
+
 ## What To Avoid
 
 - `npm` or `yarn` — use `pnpm`
